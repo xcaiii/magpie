@@ -25,10 +25,27 @@ func TestAntigravityTarget(t *testing.T) {
 	if tg == nil {
 		t.Fatalf("agy isn't a target: %v", ids(Targets()))
 	}
-	if tg.Instructions != filepath.Join(cfg, "GEMINI.md") || tg.MCP == nil ||
+	if tg.Instructions != filepath.Join(cfg, "AGENTS.md") || tg.MCP == nil ||
 		tg.MCP.Path != filepath.Join(cfg, "mcp_config.json") || tg.Skills != filepath.Join(cfg, "skills") {
 		t.Errorf("target: %+v %+v", tg, tg.MCP)
 	}
+
+	// #6122: when GEMINI.md exists and AGENTS.md does not, falls back to GEMINI.md
+	write(t, filepath.Join(cfg, "GEMINI.md"), "# legacy\n")
+	tg = targetByID("agy")
+	if tg.Instructions != filepath.Join(cfg, "GEMINI.md") {
+		t.Errorf("expected GEMINI.md fallback, got %q", tg.Instructions)
+	}
+
+	// #6122: when AGENTS.md exists, prefers AGENTS.md
+	write(t, filepath.Join(cfg, "AGENTS.md"), "# modern\n")
+	tg = targetByID("agy")
+	if tg.Instructions != filepath.Join(cfg, "AGENTS.md") {
+		t.Errorf("expected AGENTS.md preference, got %q", tg.Instructions)
+	}
+	_ = os.Remove(filepath.Join(cfg, "AGENTS.md"))
+	_ = os.Remove(filepath.Join(cfg, "GEMINI.md"))
+
 	for _, kind := range []string{"instructions", "mcp", "skills"} {
 		if id, err := Takes("antigravity-cli", kind); id != "agy" || err != nil {
 			t.Errorf("%s: %q %v", kind, id, err)
@@ -109,14 +126,14 @@ func TestAntigravityMCP(t *testing.T) {
 	}
 }
 
-// Instructions go into ~/.gemini/config/GEMINI.md, which Antigravity alone
+// Instructions go into ~/.gemini/config/AGENTS.md, which Antigravity alone
 // reads, not Gemini CLI's ~/.gemini/GEMINI.md; skills into its skills.
 func TestAntigravityInstructionsAndSkills(t *testing.T) {
 	h, cfg := antigravity(t)
 	shared := "Use tabs."
 	ok(t)(SaveInstructions(InstructionsChange{Shared: &shared, Agents: []string{"agy"}}))
-	if s := read(t, filepath.Join(cfg, "GEMINI.md")); s != blockBegin+"\nUse tabs.\n"+blockEnd+"\n" {
-		t.Errorf("~/.gemini/config/GEMINI.md:\n%q", s)
+	if s := read(t, filepath.Join(cfg, "AGENTS.md")); s != blockBegin+"\nUse tabs.\n"+blockEnd+"\n" {
+		t.Errorf("~/.gemini/config/AGENTS.md:\n%q", s)
 	}
 	if s := read(t, filepath.Join(h, ".gemini", "GEMINI.md")); s != "" {
 		t.Errorf("Gemini CLI's GEMINI.md was written:\n%q", s)
@@ -134,6 +151,20 @@ func TestAntigravityInstructionsAndSkills(t *testing.T) {
 	}
 }
 
+// #6122: an existing ~/.gemini/config/GEMINI.md is updated when no AGENTS.md is there.
+func TestAntigravityInstructionsLegacyGEMINI(t *testing.T) {
+	_, cfg := antigravity(t)
+	shared := "Use tabs."
+	write(t, filepath.Join(cfg, "GEMINI.md"), "# existing\n")
+	ok(t)(SaveInstructions(InstructionsChange{Shared: &shared, Agents: []string{"agy"}}))
+	if s := read(t, filepath.Join(cfg, "GEMINI.md")); s != "# existing\n\n"+blockBegin+"\nUse tabs.\n"+blockEnd+"\n" {
+		t.Errorf("existing ~/.gemini/config/GEMINI.md:\n%q", s)
+	}
+	if s := read(t, filepath.Join(cfg, "AGENTS.md")); s != "" {
+		t.Errorf("AGENTS.md was written despite GEMINI.md being there:\n%q", s)
+	}
+}
+
 // xuanwo on X: the Antigravity app, an agent of its own beside agy, is a
 // target too, reading the same ~/.gemini/config (antigravity.google/docs/
 // skills, /mcp: the App and the CLI share it).
@@ -147,7 +178,7 @@ func TestAntigravityAppTarget(t *testing.T) {
 	}
 	tg := targetOf(a)
 	if tg == nil || tg.MCP == nil || tg.MCP.Path != filepath.Join(cfg, "mcp_config.json") ||
-		tg.Skills != filepath.Join(cfg, "skills") || tg.Instructions != filepath.Join(cfg, "GEMINI.md") {
+		tg.Skills != filepath.Join(cfg, "skills") || tg.Instructions != filepath.Join(cfg, "AGENTS.md") {
 		t.Fatalf("target: %+v", tg)
 	}
 	if ProjectSkillsDir("antigravity") != ".agents/skills" {

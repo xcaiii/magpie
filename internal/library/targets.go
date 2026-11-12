@@ -181,13 +181,13 @@ func targetOf(a *agent.Agent) *Target {
 		t.Skills = filepath.Join(d, "skills")
 	case "agy", "antigravity":
 		// Antigravity — the app and agy alike — reads its user-wide
-		// customizations from ~/.gemini/config: GEMINI.md there (as well as
-		// Gemini CLI's ~/.gemini/GEMINI.md), mcp_config.json and skills
-		// (antigravity.google/docs/rules, /mcp, /skills; agy 1.2's `mcp
-		// add` writes that file); agy 1.2 reads no mcp_config.json from the
-		// IDE's older ~/.gemini/antigravity.
+		// customizations from ~/.gemini/config: AGENTS.md there (else the
+		// older GEMINI.md, as well as Gemini CLI's ~/.gemini/GEMINI.md),
+		// mcp_config.json and skills (antigravity.google/docs/rules, /mcp,
+		// /skills; agy 1.2's `mcp add` writes that file); agy 1.2 reads no
+		// mcp_config.json from the IDE's older ~/.gemini/antigravity.
 		d := filepath.Join(h, ".gemini", "config")
-		t.Instructions = filepath.Join(d, "GEMINI.md")
+		t.Instructions = firstThere(d, "AGENTS.md", "GEMINI.md")
 		t.MCP = &mcpFile{Path: filepath.Join(d, "mcp_config.json"), Format: fmtAntigravity}
 		t.Skills = filepath.Join(d, "skills")
 	case "opencode", "deveco":
@@ -770,7 +770,7 @@ func wslTargetOf(a *agent.Agent) *Target {
 		t.Skills = filepath.Join(d, "skills")
 	case "agy":
 		d := j(h, ".gemini", "config")
-		t.Instructions = filepath.Join(d, "GEMINI.md")
+		t.Instructions = firstThere(d, "AGENTS.md", "GEMINI.md")
 		t.MCP = &mcpFile{Path: filepath.Join(d, "mcp_config.json"), Format: fmtAntigravity}
 		t.Skills = filepath.Join(d, "skills")
 	case "crush":

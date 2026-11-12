@@ -10342,7 +10342,7 @@ Everything outside the markers is yours and is never changed. You can keep sever
 | Claude Code | `~/.claude/CLAUDE.md` |
 | Codex | `~/.codex/AGENTS.md` (or `AGENTS.override.md` when you use one) |
 | Gemini CLI | `~/.gemini/GEMINI.md` |
-| Antigravity | `~/.gemini/config/GEMINI.md` |
+| Antigravity | the first one there of `AGENTS.md` and `GEMINI.md` in `~/.gemini/config` |
 | OpenCode | `AGENTS.md` in its config folder |
 | Copilot CLI | `~/.copilot/copilot-instructions.md` |
 | Goose, Crush, Qwen Code, CodeBuddy | `.goosehints`, `CRUSH.md`, `QWEN.md`, `CODEBUDDY.md` |
